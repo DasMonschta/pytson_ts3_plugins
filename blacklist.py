@@ -51,7 +51,6 @@ class blacklist(ts3plugin):
             ts3.printMessageToCurrentTab("-----------------")
         else:ts3.printMessageToCurrentTab("Blacklist is [b]empty[/b].")
 
-    @staticmethod
     def help(self):
         ts3.printMessageToCurrentTab("Keyword: bl - /py bl [parameter] [optional nickname]")
         ts3.printMessageToCurrentTab("add NICKNAME - add a nickname to the blacklist")
