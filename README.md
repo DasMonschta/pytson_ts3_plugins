@@ -1,3 +1,3 @@
-# pytson_ts3_plugins
+# Blacklist
 
-some pytson ts3 plugins. 
+Kick user with blacklisted nicknames.
