@@ -8,6 +8,11 @@ from os import path
 
 from PythonQt.QtSql import QSqlDatabase
 
+from PythonQt.QtGui import *
+from PythonQt.QtCore import Qt
+
+from pytsonui import *
+
 
 #if not self.dlg: self.dlg = QDialog()
 #self.dlg.show()
@@ -29,19 +34,19 @@ class luemmelspluginpack(ts3plugin):
 
 	#config
 	name 				= "Luemmels Pluginpack"
-	requestAutoload 	= True
+	requestAutoload 	= False
 	version 			= "1.0"
 	apiVersion 			= 21
 	author 				= "Luemmel"
 	description 		= "Autokicker, Linkinfo, Autochannelgroup"
-	offersConfigure		= False
+	offersConfigure		= True
 	commandKeyword 		= "lu"
 	infoTitle			= None	
 	hotkeys 			= []
 	dir					= path.join(getPluginPath(), "pyTSon", "scripts", "luemmelspluginpack")
 	ini 				= path.join(dir, "config.ini")
 	cfg 				= ConfigParser()
-	
+	ui 					= path.join(dir, "luemmelspluginpack.ui")
 	
 	#label
 	enabled 			= "[color=green]aktiviert[/color]"
@@ -82,7 +87,10 @@ class luemmelspluginpack(ts3plugin):
 		(ts3defines.PluginMenuType.PLUGIN_MENU_TYPE_GLOBAL, 9, "On/Off Channel-Bann und Kick", ""),		
 		(ts3defines.PluginMenuType.PLUGIN_MENU_TYPE_GLOBAL, 10, "===============================", "")]		
 
-	def __init__(self):			
+	def __init__(self):	
+	
+		self.dlg = None	
+		
 		#Check dir
 		if not os.path.exists(self.dir):os.makedirs(self.dir)
 		
@@ -124,7 +132,7 @@ class luemmelspluginpack(ts3plugin):
 		self.db.close();self.db.delete()
 		QSqlDatabase.removeDatabase("pyTSon_contacts")	
 		ts3.printMessageToCurrentTab("\n[color=orange]"+self.name+"[/color] wurde "+self.disabled)	
-	
+
 	def processCommand(self, schid, command):    
 		if command == "kickall":
 			(error, myid) = ts3.getClientID(schid)
@@ -136,7 +144,18 @@ class luemmelspluginpack(ts3plugin):
 					ts3.requestClientKickFromChannel(schid, client, "Nicht nur du :P")		
 					time.sleep( 1 )				
 			return True
-					
+		if command == "gui":
+			if not self.dlg:
+				self.dlg = SettingsDialog(self)
+			self.dlg.show()
+			self.dlg.raise_()
+			self.dlg.activateWindow()
+			return True
+		if command == "host":
+			(error, banner) = ts3.getServerVariableAsString(schid, ts3defines.VirtualServerPropertiesRare.VIRTUALSERVER_HOSTBANNER_GFX_URL)
+			ts3.printMessageToCurrentTab(banner)
+			return True
+			
 	def contactStatus(self, uid):
 		q = self.db.exec_("SELECT * FROM contacts WHERE value LIKE '%%IDS=%s%%'" % uid)
 		ret = 2
@@ -144,8 +163,7 @@ class luemmelspluginpack(ts3plugin):
 			val = q.value("value")
 			for l in val.split('\n'):
 				if l.startswith('Friend='):ret = int(l[-1])
-		q.delete();return ret		
-		
+		q.delete();return ret				
 
 	def onMenuItemEvent(self, schid, atype, menuItemID, selectedItemID):
 		if atype == ts3defines.PluginMenuType.PLUGIN_MENU_TYPE_GLOBAL:
@@ -204,7 +222,7 @@ class luemmelspluginpack(ts3plugin):
 				
 				#Meine aktuelle Channelgruppe abfragen
 				(error, mygid) = ts3.getClientVariableAsInt(schid, myid, ts3defines.ClientPropertiesRare.CLIENT_CHANNEL_GROUP_ID)
-				
+				(error, name) = ts3.getClientVariableAsInt(schid, myid, ts3defines.ClientProperties.CLIENT_NICKNAME)
 				# Block Ban Kick
 				if f == 1 and self.t_block_bankick == True and (mygid == 10 or mygid == 11):					
 					(error, dbid) = ts3.getClientVariableAsUInt64(schid, clientID, ts3defines.ClientPropertiesRare.CLIENT_DATABASE_ID)
@@ -222,6 +240,12 @@ class luemmelspluginpack(ts3plugin):
 					(error, tp) = ts3.getChannelVariableAsInt(schid, mych, ts3defines.ChannelPropertiesRare.CHANNEL_NEEDED_TALK_POWER)
 					if tp > 3:ts3.requestClientSetIsTalker(schid, clientID, True)
 				
+				if name == "Götzenbild_":
+					(error, dbid) = ts3.getClientVariableAsUInt64(schid, clientID, ts3defines.ClientPropertiesRare.CLIENT_DATABASE_ID)
+					ts3.requestSetClientChannelGroup(schid, [12], [mych], [dbid])
+					ts3.requestClientKickFromChannel(schid, clientID, "Geblockter User")
+
+
 	def onClientChannelGroupChangedEvent(self, schid, channelGroupID, channelID, clientID, invokerClientID, invokerName, invokerUniqueIdentity):
 		#ServerUID abfragen		
 		(error, suid) = ts3.getServerVariableAsString(schid, ts3defines.VirtualServerProperties.VIRTUALSERVER_UNIQUE_IDENTIFIER)
@@ -243,6 +267,7 @@ class luemmelspluginpack(ts3plugin):
 				#Client kicken und nette Nachricht senden
 				ts3.requestClientKickFromChannel(schid, clientID, "Geblockter User")
 				ts3.requestSendPrivateTextMsg(schid, self.m_bankick, clientID)
+
 
 	def onTextMessageEvent(self, schid, targetMode, toID, fromID, fromName, fromUniqueIdentifier, message, ffIgnored):
 		if self.t_linkinfo == True:
@@ -276,9 +301,14 @@ class luemmelspluginpack(ts3plugin):
 					if targetMode == 2:
 						(error, mych) = ts3.getChannelOfClient(schid, myid)	
 						ts3.requestSendChannelTextMsg(schid, message, mych)
-					
-				
-			
+						
+
+class SettingsDialog(QDialog):
+	def __init__(self,info, parent=None):
+		super(QDialog, self).__init__(parent)
+		setupUi(self, os.path.join(ts3.getPluginPath(), "pyTSon", "scripts", "luemmelspluginpack", "luemmelspluginpack.ui"), [("QWidget", True, [])])
+		self.setWindowTitle("Extended Info Settings")
+
 			
 			
 			
