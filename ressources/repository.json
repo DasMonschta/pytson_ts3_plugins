@@ -1,0 +1,20 @@
+[
+    {
+        "name": "Avatar Grabber",
+        "author": "Luemmel",
+        "version": "1.0",
+        "apiVersion": "21",
+        "description": "Grab an avatar and save it.",
+        "url": "https://rawgit.com/Metvernichter/pyTSon_ts3_avatargrabber/master/scripts/avatargrabber.py",
+        "dependencies": null
+    },
+    {
+        "name": "Linkinfo",
+        "author": "Luemmel",
+        "version": "1.0.1",
+        "apiVersion": "21",
+        "description": "Prints a Linkinfolink to the chat.",
+        "url": "https://rawgit.com/Metvernichter/pyTSon_ts3_linkinfo/master/scripts/linkinfo.py",
+        "dependencies": null
+    }
+]
